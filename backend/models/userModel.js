@@ -15,10 +15,11 @@ const userSchema = mongoose.Schema({
       type: String,
       required: [true, 'Please add a password'],
     },
-	verified: {
-		type: mongoose.Schema.Types.Boolean,
-		required: true
-	}
+    verified: {
+      type: mongoose.Schema.Types.Boolean,
+      required: true,
+      default: false
+    }
 },{
     timestamps: true,
 });
