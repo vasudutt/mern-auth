@@ -1,8 +1,10 @@
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const VerificationToken = require('../models/verificationTokenModel');
-const { generateOtp, mailTransport, generateEmailTemplate, plainEmailTemplate } = require('../utils/mail');
+const ResetToken = require('../models/resetToken');
+const { generateOtp, mailTransport, generateEmailTemplate, plainEmailTemplate, forgotPasswordEmailTemplate } = require('../utils/mail');
 const { isValidObjectId } = require('mongoose');
+const { createRandomBytes } = require('../utils/helper');
 
 exports.createUser = async (req, res) => {
 	const {name, email, password} = req.body;
@@ -100,3 +102,40 @@ exports.verifyEmail = async (req, res) => {
 		}
 	});
 } 
+
+exports.forgotPassword = async (req, res) => {
+	const {email} = req.body;
+
+	if(!email) return res.status(400).json({success: false, error: 'Please provide a valid email!'});
+
+	const user = await User.findOne({email});
+
+	if(!user) return res.status(400).json({success: false, error: 'User not found!'});
+
+	const prevToken = await ResetToken.findOne({owner: user._id});
+	if(prevToken) return res.status(400).json({success: false, error: 'Wait an hour before requesting new token!'});
+
+	const token = await createRandomBytes();
+	const resetToken = new ResetToken({owner: user._id, token});
+	await resetToken.save();
+
+	mailTransport().sendMail({
+		from: 'security@email.com',
+		to: user.email,
+		subject: "MERN-Auth - Password Reset",
+		html: forgotPasswordEmailTemplate(`http://localhost:3000/reset-password?token=${token}&id=${user._id}`)
+	});
+
+	res.status(200).json({success: true, error: 'Password reset link is sent to your email!'});	
+}
+
+exports.resetPassword = async (req, res) => {
+	const {password} = req.body;
+	
+	const user = await User.findById(req.user._id);
+	if(!user) return res.status(400).json({success: false, error: 'User not found!'});
+
+	const isSamePassword = await user.comparePassword(password);
+	if(isSamePassword) return res.status(400).json({success: false, error: 'New password must be different!'});
+
+}

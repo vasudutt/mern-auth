@@ -43,11 +43,21 @@ exports.generateEmailTemplate = code => {
 	`)
 }
 
-exports.plainEmailTemplate = () => {
+exports.plainEmailTemplate = (message) => {
 	return (`
 		<html>
 			<body>
-				<p>Thank you! Ypur account is now verified</p>
+				<p>${message}</p>
+			</body>
+		</html>
+	`)
+}
+
+exports.forgotPasswordEmailTemplate = (url) => {
+	return (`
+		<html>
+			<body>
+				<p>Reset password here : ${url}</p>
 			</body>
 		</html>
 	`)
